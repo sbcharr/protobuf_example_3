@@ -1,0 +1,167 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package scheduler;
+
+//import "api/v1/mesos.proto";
+
+
+
+
+//option java_package = "org.apache.mesos.v1.scheduler";
+//option java_outer_classname = "Protos";
+
+
+/**
+ * Scheduler event API.
+ *
+ * An event is described using the standard protocol buffer "union"
+ * trick, see:
+ * https://developers.google.com/protocol-buffers/docs/techniques#union.
+ */
+message Event {
+    // Possible event types, followed by message definitions if
+    // applicable.
+    enum Type {
+        // This must be the first enum value in this list, to
+        // ensure that if 'type' is not set, the default value
+        // is UNKNOWN. This enables enum values to be added
+        // in a backwards-compatible way. See: MESOS-4997.
+        UNKNOWN = 0;
+
+        SUBSCRIBED = 1;             // See 'Subscribed' below.
+        OFFERS = 2;                 // See 'Offers' below.
+        INVERSE_OFFERS = 9;         // See 'InverseOffers' below.
+        RESCIND = 3;                // See 'Rescind' below.
+        RESCIND_INVERSE_OFFER = 10; // See 'RescindInverseOffer' below.
+        UPDATE = 4;                 // See 'Update' below.
+        MESSAGE = 5;                // See 'Message' below.
+        FAILURE = 6;                // See 'Failure' below.
+        ERROR = 7;                  // See 'Error' below.
+
+        // Periodic message sent by the Mesos master according to
+        // 'Subscribed.heartbeat_interval_seconds'. If the scheduler does
+        // not receive any events (including heartbeats) for an extended
+        // period of time (e.g., 5 x heartbeat_interval_seconds), there is
+        // likely a network partition. In such a case the scheduler should
+        // close the existing subscription connection and resubscribe
+        // using a backoff strategy.
+        HEARTBEAT = 8;
+    }
+
+    // First event received when the scheduler subscribes.
+    message Subscribed {
+        required FrameworkID framework_id = 1;
+
+        // This value will be set if the master is sending heartbeats. See
+        // the comment above on 'HEARTBEAT' for more details.
+        optional double heartbeat_interval_seconds = 2;
+
+        // Since Mesos 1.1.
+        optional MasterInfo master_info = 3;
+    }
+
+    // Type of the event, indicates which field below should be
+    // present if that type has a nested message definition.
+    // Enum fields should be optional, see: MESOS-4997.
+    optional Type type = 1;
+    optional Subscribed subscribed = 2;
+
+}
+
+/**
+ * A unique ID assigned to a framework. A framework can reuse this ID
+ * in order to do failover (see MesosSchedulerDriver).
+ */
+message FrameworkID {
+    required string value = 1;
+}
+
+/**
+ * Describes a master. This will probably have more fields in the
+ * future which might be used, for example, to link a framework webui
+ * to a master webui.
+ */
+message MasterInfo {
+    optional string id = 1;
+
+    // The IP address (only IPv4) as a packed 4-bytes integer,
+    // stored in network order.  Deprecated, use `address.ip` instead.
+    optional uint32 ip = 2;
+
+    // The TCP port the Master is listening on for incoming
+    // HTTP requests; deprecated, use `address.port` instead.
+    optional uint32 port = 3;
+
+    // In the default implementation, this will contain information
+    // about both the IP address, port and Master name; it should really
+    // not be relied upon by external tooling/frameworks and be
+    // considered an "internal" implementation field.
+    optional string pid = 4;
+
+    // The server's hostname, if available; it may be unreliable
+    // in environments where the DNS configuration does not resolve
+    // internal hostnames (eg, some public cloud providers).
+    // Deprecated, use `address.hostname` instead.
+    optional string hostname = 5;
+
+    // The running Master version, as a string; taken from the
+    // generated "master/version.hpp".
+    optional string version = 6;
+
+    // The full IP address (supports both IPv4 and IPv6 formats)
+    // and supersedes the use of `ip`, `port` and `hostname`.
+    // Since Mesos 0.24.
+    optional Address address = 7;
+
+    // The domain that this master belongs to. All masters in a Mesos
+    // cluster should belong to the same region.
+    optional DomainInfo domain = 8;
+}
+
+/**
+ * A network address.
+ *
+ * TODO(bmahler): Use this more widely.
+ */
+message Address {
+    // May contain a hostname, IP address, or both.
+    optional string hostname = 1;
+    optional string ip = 2;
+
+    optional int32 port = 3;
+}
+
+message DomainInfo {
+    message FaultDomain {
+        message RegionInfo {
+            optional string name = 1;
+        }
+
+        message ZoneInfo {
+            optional string name = 1;
+        }
+
+        optional RegionInfo region = 1;
+        optional ZoneInfo zone = 2;
+    }
+
+    optional FaultDomain fault_domain = 1;
+}
+
+

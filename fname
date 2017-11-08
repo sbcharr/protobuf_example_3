@@ -1,0 +1,1 @@
+{"subscribed":{"framework_id":{"value":"8afb9865-9015-43bf-95ea-dec7fbe4a296-0012"},"heartbeat_interval_seconds":15.0,"master_info":{"address":{"hostname":"172.28.128.8","ip":"172.28.128.8","port":5050},"hostname":"172.28.128.8","id":"8afb9865-9015-43bf-95ea-dec7fbe4a296","ip":142613676,"pid":"master@172.28.128.8:5050","port":5050,"version":"1.3.0"}},"type":"SUBSCRIBED"}
